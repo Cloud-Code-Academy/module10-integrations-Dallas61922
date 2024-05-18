@@ -33,19 +33,29 @@ public with sharing class DummyJSONCallout {
 	 * 
      * @param dummyUserId The ID of the user in the external system to fetch data for.
      */
-
-	public static void getDummyJSONUserFromId(String dummyUserId) {
+	
+	@future(callout=true)
+	public static void getDummyJSONUserFromId(String dummyUserId) { //Used in After Insert trigger
 		// Create HTTP request to send.
-
+		Http http = new Http();
+		HttpRequest req = new HttpRequest();
 		// Set the endpoint URL. Use direct URL or for best practices use Named Credential.
-
+		req.setEndpoint('https://dummyjson.com/users/' + dummyUserId);
 		// Set the HTTP method to GET.
-
+		req.setMethod('GET');
 		// Send the HTTP request and get the response.
-
+		HTTPResponse res = http.send(req);
 		// If the HTTP response code is successful, parse the JSON response and update the contact.
-		Contact cont = null;
-		upsert cont DummyJSON_Id__c; //insert/update from the JSON response using the external id (dummyUserId)
+		if(res.getStatusCode() == 200){
+			String responseBody = res.getBody();
+			Contact cont = createContactFromJson(responseBody);
+			cont.DummyJSON_Id__c = dummyUserId;
+			Upsert cont DummyJSON_Id__c; //insert/update from the JSON response using the external id (dummyUserId)
+		} else {
+			System.debug('Q1 HTTP request failed. Status code: ' + res.getStatusCode());
+			System.debug('Q1 Response body: ' + res.getBody());
+		}
+
 	}
 
 	/* 
@@ -64,18 +74,30 @@ public with sharing class DummyJSONCallout {
      * @return Contact The Salesforce Contact object populated with details from the JSON string.
      */
 	@TestVisible // Allows test class to see this method. Since it is private, it would not be visible otherwise.
+	//
 	private static Contact createContactFromJson(String jsonResponse) {
 		// Deserialize the JSON string into map of primitive data types.
-
+		Map<String, Object> parsedResponse = (Map<String, Object>) JSON.deserializeUntyped(jsonResponse);
 		// Create a new contact from the JSON response.
-
+		Contact newCon = new Contact();
 		// Set the contact fields from the JSON response.
+		newCon.FirstName = (String) parsedResponse.get('firstName');
+		newCon.LastName = (String) parsedResponse.get ('lastName');
+		newCon.Email = (String) parsedResponse.get('email');
+		newCon.Phone = (String) parsedResponse.get('phone');
+		newCon.Birthdate = Date.valueOf((String) parsedResponse.get('birthDate'));
 
 		// Deserialize the address from the JSON response.
-
+		Map<String, Object> addressMap = (Map<String, Object>) parsedResponse.get('address');
 		// Set the address fields on the contact.
-
-		return null;
+		newCon.MailingStreet = (String) addressMap.get('address');
+		newCon.MailingCity = (String) addressMap.get ('city');
+		newCon.MailingPostalCode = (String) addressMap.get ('postalCode');
+		newCon.MailingState = (String) addressMap.get ('state');
+		newCon.MailingCountry = (String) addressMap.get ('country');
+		
+		insert newCon;
+		return newCon;
 	}
 
 	/* 
@@ -92,18 +114,30 @@ public with sharing class DummyJSONCallout {
      * @param contactId The Salesforce Contact ID used to generate the JSON payload for the external system.
      */
 	
-	public static void postCreateDummyJSONUser(String contactId) {
+	@future (callout=true)
+	public static void postCreateDummyJSONUser(String contactId) { //Used in Before Update Trigger
+		Contact con = [SELECT Id, DummyJSON_Last_Updated__c, FirstName, LastName, Email
+					   FROM Contact
+					   WHERE Id = :contactId];
 		// Create HTTP request to send.
-
+		HttpRequest req = new HttpRequest();
 		// Set the endpoint URL. Use direct URL or for best practices use Named Credential.
-
+		req.setEndpoint('callout:DummyJsonUser' + '/add');
 		// Set the HTTP method to POST.
-
+		req.setMethod('POST');
 		// Set the body using generateDummyJsonUserPayload method.
-
+		req.setBody(generateDummyJsonUserPayload(contactId));
 		// Send the HTTP request and get the response.
-
+		Http http = new Http();
+		HttpResponse res = http.send(req);
+		System.debug(res.getBody());
+		System.debug(res.getStatusCode());
+		System.debug(res.getStatus()); 
 		// If the HTTP response code is successful, update the contact.
+		if(res.getStatusCode() >= 200 && res.getStatusCode() < 300){
+			con.DummyJSON_Last_Updated__c = Datetime.now();
+			update con;
+		}
 	}
 
 	/*
@@ -121,16 +155,38 @@ public with sharing class DummyJSONCallout {
      * @param String contactId The Salesforce Contact ID used to fetch the contact's fields and generate the JSON payload.
      * @return String The JSON string payload that represents the Contact's details.
      */
+	//
 	@TestVisible // Allows test class to see this method. Since it is private, it would not be visible otherwise.
-	private static String generateDummyJsonUserPayload(String contactId) {
+	public static String generateDummyJsonUserPayload(String contactId) {
 		// Query the contact to get the field values to generate the JSON payload.
-
+		Contact con = [SELECT Contact.Id, FirstName, LastName, Email, Phone, Birthdate
+					   FROM Contact
+					   WHERE Id = :contactId];
 		// Create a map of the field values.
+		Map<String, Object> conMap = new Map<String, Object>();
+		conMap.put('contact', con);
+		conMap.put('firstName', con.FirstName);
+		conMap.put('lastName', con.LastName);
+		conMap.put('email', con.Email);
+		conMap.put('salesforceId', con.Id);
+		conMap.put('phone', con.Phone);
+		conMap.put('birthDate', con.Birthdate);
 
-		// Serialize the map into a JSON string.
 		// Make sure to check that required contacts fields have a value. Default the value to unknown if it does not exists.
-		// Integration data can change over time. It is a best practice to add safeguards/validation to ensure the integration does not break.
+		Set<String> keys = conMap.keySet();
+		for(String key : keys){
+			Object value = conMap.get(key);
+			if (value == null){
+				value = 'unknown';
+			}
+		}
+		
+		// Serialize the map into a JSON string.
+		String jsonString = JSON.serialize(conMap);
 
-		return null;
+		// Integration data can change over time. It is a best practice to add safeguards/validation to ensure the integration does not break.
+		
+		return jsonString;
 	}
+	
 }

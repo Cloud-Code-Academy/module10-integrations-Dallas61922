@@ -16,13 +16,45 @@
  * 
  * Optional Challenge: Use a trigger handler class to implement the trigger logic.
  */
-trigger ContactTrigger on Contact(before insert) {
+trigger ContactTrigger on Contact(before insert, after insert, after update, before update, before delete, after delete, after undelete) {
 	// When a contact is inserted
-	// if DummyJSON_Id__c is null, generate a random number between 0 and 100 and set this as the contact's DummyJSON_Id__c value
-
+	public static Boolean stopRecursion = false;
+	if(!stopRecursion){
+		stopRecursion = true;
+		ContactTriggerHandler handler = new ContactTriggerHandler();
+		handler.run();
+		//moved to handler
+		//if(trigger.isInsert && trigger.isBefore){
+			// for(Contact con : Trigger.new){
+			// 	// if DummyJSON_Id__c is null, generate a random number between 0 and 100 and set this as the contact's DummyJSON_Id__c value
+			// 	if (con.DummyJSON_Id__c == null){
+			// 		Integer randomNo = (Integer)(Math.random() * 100);
+			// 		con.DummyJSON_Id__c = String.ValueOf(randomNo);
+			// 	} 
+			// }
+		}
 	//When a contact is inserted
 	// if DummyJSON_Id__c is less than or equal to 100, call the getDummyJSONUserFromId API
+		// if(trigger.isInsert && trigger.isAfter){
 
+		// 	for(Contact newCon : trigger.new){
+		// 		if ((newCon.DummyJSON_Id__c <>null) && numbersToOneHundred.toString().contains(newCon.DummyJSON_Id__c)){
+		// 			DummyJSONCallout.getDummyJSONUserFromId(newCon.DummyJSON_Id__c);
+		// 		}
+		// 	}
+		// }
+	
 	//When a contact is updated
-	// if DummyJSON_Id__c is greater than 100, call the postCreateDummyJSONUser API
-}
+	// 	if(trigger.isUpdate && trigger.isBefore){
+	// 		for(Contact updatedCon : trigger.new){
+	// 			Contact oldCon = Trigger.oldMap.get(updatedCon.Id);
+	// // if DummyJSON_Id__c is greater than 100, call the postCreateDummyJSONUser API
+	// 			if((oldCon.DummyJSON_Id__c <> updatedCon.DummyJSON_Id__c) && (updatedCon.DummyJSON_Id__c <>null) && !(numbersToOneHundred.toString().contains(updatedCon.DummyJSON_Id__c))){
+	// 				DummyJSONCallout.postCreateDummyJSONUser(updatedCon.Id);
+	// 			}
+	// 		}
+
+	// 	}
+	}
+
+

@@ -15,6 +15,9 @@ public with sharing class DummyJSONCalloutTest {
 
 		// As this is a future method, we need to enclose it in Test.startTest() and Test.stopTest() to ensure it's executed in the test context.
 		Test.startTest();
+		Database.DMLOptions dml = new Database.DMLOptions(); 
+        dml.DuplicateRuleHeader.allowSave = true;
+        dml.DuplicateRuleHeader.runAsCurrentUser = true;
 		DummyJSONCallout.getDummyJSONUserFromId('1'); // Call the method with an example userId
 		Test.stopTest();
 
@@ -72,6 +75,9 @@ public with sharing class DummyJSONCalloutTest {
 
 		// As this is a future method, we need to enclose it in Test.startTest() and Test.stopTest() to ensure it's executed in the test context.
 		Test.startTest();
+		Database.DMLOptions dml = new Database.DMLOptions(); 
+        dml.DuplicateRuleHeader.allowSave = true;
+        dml.DuplicateRuleHeader.runAsCurrentUser = true;
 		DummyJSONCallout.postCreateDummyJSONUser(testContact.Id);
 		Test.stopTest();
 
@@ -144,6 +150,9 @@ public with sharing class DummyJSONCalloutTest {
 
 		// As this is a future method, we need to enclose it in Test.startTest() and Test.stopTest() to ensure it's executed in the test context.
 		Test.startTest();
+		/*Database.DMLOptions dml = new Database.DMLOptions(); 
+        dml.DuplicateRuleHeader.allowSave = true;
+        dml.DuplicateRuleHeader.runAsCurrentUser = true;*/
 		insert contacts;
 		Test.stopTest();
 
