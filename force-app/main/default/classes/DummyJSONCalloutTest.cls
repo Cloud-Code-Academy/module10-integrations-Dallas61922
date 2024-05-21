@@ -7,7 +7,7 @@ public with sharing class DummyJSONCalloutTest {
 	// This test method will test the getDummyJSONUserFromId future method with a mock HTTP response.
 	@IsTest
 	static void testGetDummyJSONUserFromId() {
-		// Create contact
+		// Create contact 
 		Contact cont = new Contact(FirstName = 'Test', LastName = 'User', DummyJSON_Id__c = '1');
 		insert cont;
 		// Register the mock callout class
