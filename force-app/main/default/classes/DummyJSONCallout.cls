@@ -96,7 +96,7 @@ public with sharing class DummyJSONCallout {
 		newCon.MailingState = (String) addressMap.get ('state');
 		newCon.MailingCountry = (String) addressMap.get ('country');
 		
-		insert newCon;
+		//insert newCon; I don't think this is necessary here since I will upsert in the getDummyJSONUserFromId method
 		return newCon;
 	}
 
